@@ -46,6 +46,11 @@ jobs:
         with:
           driver: docker-container
 
+      - name: Ensure ECR repository exists
+        run: |
+         aws ecr describe-repositories --repository-names ${{ secrets.ECR_REPOSITORY }} \
+         || aws ecr create-repository --repository-name ${{ secrets.ECR_REPOSITORY }}
+
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
