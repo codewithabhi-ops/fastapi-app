@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [ "develop", "main" ]
+  pull_request:
+    branches: [ "develop", "main" ]
+
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write     # required for OIDC
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r app/requirements.txt
+          pip install pytest flake8
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Lint
+        run: flake8 app || true
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}   # recommended: OIDC role
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:cache
+          cache-to: type=registry,ref=${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:cache,mode=max
+
+      - name: Upload image info artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-info
+          path: image-info.txt
+        # you can create image-info.txt with image tag so CD can pick it up
+
