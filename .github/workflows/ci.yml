@@ -41,10 +41,10 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-   #   - name: Set up Docker Buildx
-  #      uses: docker/setup-buildx-action@v3
-   #     with:
-    #      driver: docker-container
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
 
       - name: Ensure ECR repository exists
         run: |
@@ -58,8 +58,8 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
-        #  cache-from: type=registry,ref=${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:cache,ignore-error=true
-        #  cache-to: type=registry,ref=${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:cache,mode=max
+          cache-from: type=registry,ref=${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:cache,ignore-error=true
+          cache-to: type=registry,ref=${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:cache,mode=max
 
       - name: Upload image info artifact
         uses: actions/upload-artifact@v4
